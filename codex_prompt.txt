@@ -1,0 +1,117 @@
+## Steps of Git (本地)
+
+git --version
+
+git config --global user.name "你的名字"
+git config --global user.email "你的信箱"
+git config --global init.defaultBranch main
+
+git config --global --list
+
+### 製作 .gitignore file
+.gitignore
+
+### 初始化
+git init
+
+### 版本控制
+git status
+git add .
+git status
+git commit -m "訊息串"
+
+=======================================================================================
+
+## Steps of Git 以及設定 (Github)
+
+git --version
+
+git config --global user.name "你的名字"
+git config --global user.email "你的信箱"
+git config --global init.defaultBranch main
+
+git config --global --list
+
+### 製作 .gitignore file
+.gitignore
+
+### 設定所要上傳至的 Repository
+git remote -v
+git remote add origin https://github.com/tku411770448/GPT-GenImage-UI-Food.git
+git remote -v
+
+
+### 初始化
+git init
+
+### 版本控制
+git status
+git add .
+git status
+git commit -m "訊息串"
+git push
+
+
+
+======================================================================================
+
+## 本地 .git
+
+請依照 AGENTS.md 的規則修改目前專案。
+
+任務：
+[在這裡描述你要修正或新增的功能]
+
+完成條件：
+1. 實際修改檔案。
+2. 執行必要的檢查或測試。
+3. 不要上傳 GitHub，不要使用 push/pull/remote。
+4. 完成後建立本地 Git commit。
+5. 回報：
+   - 修改了哪些檔案
+   - 執行了哪些檢查
+   - commit message
+   - commit hash
+
+=======================================================================================
+
+## git push 至 GitHub
+
+請依照 AGENTS.md 的規則修改目前專案。
+
+任務：
+仔細分析、檢視目前專案內容，並將目前專案的內容對 README.md 做同步的修正
+
+完成條件：
+1. 實際修改目前專案中的檔案。
+2. 執行必要的檢查或測試。
+3. 修改完成後先執行：
+   git status
+   git diff --stat
+4. 檢查是否有不該提交或上傳的檔案。
+5. 若檢查無誤，請建立本地 Git commit：
+   git add -A
+   git commit -m "[清楚描述本次修改內容]"
+6. 讀取目前分支：
+   git branch --show-current
+7. 讀取遠端設定：
+   git remote -v
+8. 將目前分支 push 到 GitHub：
+   git push origin HEAD
+
+限制：
+- 不要使用 git push --force。
+- 不要自行新增 remote。
+- 不要自行切換分支。
+- 不要自行刪除遠端分支。
+- 如果沒有 origin，請停止並回報。
+- 如果 push 發生 non-fast-forward 或 authentication error，請停止並回報錯誤訊息。
+
+回報：
+- 修改了哪些檔案
+- 執行了哪些檢查
+- commit message
+- commit hash
+- 目前分支名稱
+- push 是否成功
+- push 到哪個 remote / branch
