@@ -258,7 +258,9 @@ DEFAULT_GPT_IMAGE2_PRICING_PER_1M = {
     "image_output_tokens": 30.00,
 }
 STEP_COUNT = 10
-VISIBLE_STEPS = [0, 2, 3, 4, 5, 6, 7, 8, 9]
+# Internal step 4 is the retired Target Area editor. Keep the internal slot for
+# older project-state compatibility, but remove it from the visible workflow.
+VISIBLE_STEPS = [0, 2, 3, 5, 6, 7, 8, 9]
 STEP_TO_STACK_INDEX = {step: idx for idx, step in enumerate(VISIBLE_STEPS)}
 STEP_DISPLAY_INDEX = {step: idx for idx, step in enumerate(VISIBLE_STEPS)}
 
@@ -762,16 +764,13 @@ class PromptGroupList(QListWidget):
     def load_groups(self, image_paths: list[Path], regions_dir: Path, selected: str = "", selected_stems: Optional[list[str]] = None) -> None:
         self.clear()
         selected_stems = [str(x) for x in (selected_stems or []) if str(x)]
-        valid_paths: list[Path] = []
-        for p in image_paths:
-            if (regions_dir / f"{p.stem}.txt").exists():
-                valid_paths.append(p)
+        valid_paths = [p for p in image_paths if p.exists()]
 
         if valid_paths:
-            all_item = QListWidgetItem("全部圖像\n位置資訊")
+            all_item = QListWidgetItem("全部圖像")
             all_item.setData(Qt.UserRole, "__ALL__")
             all_item.setIcon(self._make_all_icon())
-            all_item.setToolTip("快速選取所有已完成 Target Area 的圖像；若超過 16 組，系統會要求縮減。")
+            all_item.setToolTip("快速選取所有 Step 3 輸入圖像；若超過 16 組，系統會要求縮減。")
             self.addItem(all_item)
 
         for p in valid_paths:
@@ -1962,9 +1961,9 @@ class MainWindow(QMainWindow):
         0: [("可在此新增、開啟、複製或刪除專案。每個專案會保存自己的設定與任務狀態。", False)],
         1: [("第一次使用請輸入 OpenAI API Key，按『儲存 / 替換 API Key』後會立即顯示是否已保存成功。", False), ("重要：若輸入不同 API Key，系統會先要求確認，避免誤改；套件版本檢查已省略。", True)],
         2: [("可拖曳圖片或資料夾上傳；刪除只會移除本專案複製檔，不會刪除原始圖片。", False), ("上方清單用來管理檔案；下方大預覽框用來檢查目前選取圖片。", False)],
-        3: [("先點選左側已上傳圖片縮圖，中間才會載入該原圖預覽。", False), ("若要保留全部原圖不裁切，請按底部 Back 與 Submit 之間的『使用原始圖片』；系統會把 Step 2 的全部上傳圖直接作為 Step 4 輸入並跳到 Step 4。", True), ("若需要裁切，請設定裁切框寬高後在中間圖像點選/拖曳裁切框，裁切結果會加入右側 Step 3 輸入圖像。裁切寬高僅作為輸入圖尺寸；建議值為 320(px)～1280(px)，真正的生成輸出尺寸限制在 Step 6。", False)],
+        3: [("先點選左側已上傳圖片縮圖，中間才會載入該原圖預覽。", False), ("若要保留全部原圖不裁切，請按底部 Back 與 Submit 之間的『使用原始圖片』；系統會把 Step 2 的全部上傳圖直接作為 Prompt 輸入並跳到 Prompt 編輯。", True), ("若需要裁切，請設定裁切框寬高後在中間圖像點選/拖曳裁切框，裁切結果會加入右側 Step 3 輸入圖像。裁切寬高僅作為輸入圖尺寸；建議值為 320(px)～1280(px)，真正的生成輸出尺寸限制在 Step 4。", False)],
         4: [("請針對每張輸入圖框選 Target Area。Target Area 代表允許食物姿態、方向、擺放位置或局部外觀變化的範圍。", False), ("本頁已啟用自動儲存：新增、刪除、切換 Target Area 後會自動寫入座標與 mask，不需要另外按儲存。", True), ("左側圖像清單可多選，但此處只用於 Step 4 檢視與快速切換；最終要送進生成的圖像組合改在 Step 5『引用組別』決定。", True), ("Target Area 支援多個區域、逐一選取刪除與全部刪除；重疊時會以聯集方式輸出到同一張 mask。", False), ("直線繪製 Target Area 時，請依序點選多個頂點，最後點回第一個點形成封閉區域；未封閉會提示重新繪製。", True), ("快捷鍵：T=矩形 Target、L=直線 Target、Y=選取 Target、G=刪除全部 Target、H=刪除選取 Target、↑/↓=上一張/下一張圖並同步左側縮圖選取。選取矩形 Target Area 後，可拖曳四角控制點調整寬高，也可拖曳左右邊中點水平調整寬度、上下邊中點垂直調整高度。", False), ("Ctrl + 滑鼠滾輪可縮放，滑鼠中鍵可平移；繪製時游標旁會顯示 Target Area，方便確認目前模式。Target Area 請精準包住食物或可變動區域，避開不希望被更動的背景、餐盤或桌面。", False)],
-        5: [("請在上方『引用組別』用 Ctrl / Shift 多選最終要送入生成的圖像組合；一次最多 16 組，超過會提示並擋下。", True), ("自訂 prompt 預設空白；使用模板時請按『套用模板到輸入指令』。實際傳送指令會自動合併已選圖像與 Target Area 資訊。", False), ("Step 8 會使用 Step 4 產生的 Target Area mask 執行限定範圍內的食物變化，因此變化位置會依據所選組合的框選範圍。座標會以 x1、y1、x2、y2 顯示，方便確認框選範圍。", False)],
+        5: [("請在上方『引用組別』用 Ctrl / Shift 多選最終要送入生成的圖像組合；一次最多 16 組，超過會提示並擋下。", True), ("自訂 prompt 預設空白；使用模板時請按『套用模板到輸入指令』。實際傳送指令只會包含 prompt 內容，不再合併 Target Area 座標。", False), ("生成會使用圖像與 prompt 直接進行食物圖像編輯；若需要指定位置，請在 prompt 中以自然語言描述食物或 class name 的位置。", False)],
         6: [("gpt-image-2 輸出尺寸限制：寬高皆需為 16 的倍數、長邊不可超過 3840 px、長寬比不可超過 3:1、總像素需介於 655,360 px～8,294,400 px。", True), ("已恢復正式檢查：按『確認參數並估算本次成本』時，無論是『自訂尺寸』或『與原圖尺寸相同』，只要低於下界、高於上界或比例不合規，都會跳出提示並阻止進入下一步。", True), ("例如 640×640 = 409,600 px，低於最低總像素限制；5472×3648 長邊超過 3840 px 且總像素過高。成本預估會嘗試讀取 OpenAI Pricing；實際金額仍以 API usage / 帳單為準。", False)],
         7: [("Aggregate 會即時顯示目前重點設定。確認內容無誤後按 Submit 進入正式生成。", False)],
         8: [("生成期間會鎖定其他 Step，避免生成中被修改設定。", False), ("若同一 Run name 已存在，開始生成前會先清除該 run 的舊資料，避免新舊輸出混在一起。", True), ("正式生成會消耗 API 額度。", True)],
@@ -2248,6 +2247,12 @@ class MainWindow(QMainWindow):
                 return True
         return False
 
+    def project_has_input_images(self, state: UIState | None = None) -> bool:
+        for inputs, _regions in self._class_input_dirs_for_state(state):
+            if list_images(inputs):
+                return True
+        return False
+
     def project_prompt_exists(self, state: UIState | None = None) -> bool:
         st = state or self.state
         preferred = [sanitize_name(st.class_name or ""), sanitize_name(st.project_name or ""), sanitize_name(st.project_id or "")]
@@ -2282,22 +2287,22 @@ class MainWindow(QMainWindow):
             target.completed_steps = fixed
         target.completed_steps[0] = True
         target.completed_steps[1] = True
-        if target.completed_steps[3] or self.project_has_required_regions(target):
+        has_inputs = self.project_has_input_images(target)
+        if target.completed_steps[3] or has_inputs:
             target.crop_mode_selected = True
         has_runs = self.project_has_generation_outputs(target)
         has_exports = self.project_has_export_outputs(target)
-        has_regions = self.project_has_required_regions(target)
         has_prompt = bool(target.prompt_input.strip()) or self.project_prompt_exists(target)
         if has_runs:
             for i in range(0, 9):
                 target.completed_steps[i] = True
             if has_exports or bool(target.completed_steps[9]):
                 target.completed_steps[9] = True
-        elif has_regions and has_prompt:
+        elif has_inputs and has_prompt:
             for i in range(0, 7):
                 target.completed_steps[i] = True
-        elif has_regions:
-            for i in range(0, 5):
+        elif has_inputs:
+            for i in range(0, 4):
                 target.completed_steps[i] = True
 
     def save_state(self) -> None:
@@ -2410,7 +2415,6 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.page_home())
         self.stack.addWidget(self.page_upload())
         self.stack.addWidget(self.page_crop())
-        self.stack.addWidget(self.page_regions())
         self.stack.addWidget(self.page_prompt())
         self.stack.addWidget(self.page_model())
         self.stack.addWidget(self.page_aggregate())
@@ -2494,7 +2498,7 @@ class MainWindow(QMainWindow):
             item = content_layout.takeAt(0)
             if item.widget(): body_lay.addWidget(item.widget())
             elif item.layout(): body_lay.addLayout(item.layout())
-        if step_idx not in {0, 2, 3, 4, 7}:
+        if step_idx not in {0, 2, 3, 5, 7}:
             body_lay.addStretch(1)
         scroll = QScrollArea(); scroll.setObjectName("PageScroll"); scroll.setAcceptDrops(True); scroll.viewport().setAcceptDrops(True); scroll.setWidgetResizable(True); scroll.setFrameShape(QFrame.NoFrame); scroll.setWidget(body)
         page_lay.addWidget(scroll, 1)
@@ -2580,7 +2584,7 @@ class MainWindow(QMainWindow):
 
     def page_upload(self) -> QWidget:
         lay = QVBoxLayout()
-        lay.addWidget(self.header("Step 1｜資料上傳", "選擇或拖曳原始圖片；下一步會依照指定尺寸進行裁切。"))
+        lay.addWidget(self.header("Step 2｜資料上傳", "選擇或拖曳原始圖片；下一步會依照指定尺寸進行裁切。"))
         row = QHBoxLayout()
         choose = QPushButton("選擇圖片資料夾"); choose.clicked.connect(self.safe_action("choose_source_folder", self.choose_source_folder))
         delete_btn = QPushButton("刪除選取圖片"); delete_btn.clicked.connect(self.safe_action("delete_selected_uploads", self.delete_selected_uploads))
@@ -2596,7 +2600,7 @@ class MainWindow(QMainWindow):
 
     def page_crop(self) -> QWidget:
         lay = QVBoxLayout()
-        lay.addWidget(self.header("Step 2｜裁切尺寸與圖像裁切", "請先點選左側縮圖；可直接使用原始圖片，也可用裁切框裁切後送入 Step 3。"))
+        lay.addWidget(self.header("Step 3｜裁切尺寸與圖像裁切", "請先點選左側縮圖；可直接使用原始圖片，也可用裁切框裁切後送入 Prompt。"))
 
         lay.addWidget(self.build_step3_workflow(), 1)
         self.validate_crop_inputs()
@@ -2637,8 +2641,8 @@ class MainWindow(QMainWindow):
             card_lay.addWidget(btn)
             return card
 
-        row.addWidget(make_mode_card("使用原圖尺寸", "不做裁切，直接將 Step 2 原始圖片作為 Step 4 的輸入。", "使用此模式", "no_crop"), 1)
-        row.addWidget(make_mode_card("裁切尺寸", "依固定寬高在原圖上選擇裁切區域，產生 Step 4 的輸入圖片。", "使用此模式", "crop"), 1)
+        row.addWidget(make_mode_card("使用原圖尺寸", "不做裁切，直接將 Step 2 原始圖片作為 Prompt 的輸入。", "使用此模式", "no_crop"), 1)
+        row.addWidget(make_mode_card("裁切尺寸", "依固定寬高在原圖上選擇裁切區域，產生 Prompt 的輸入圖片。", "使用此模式", "crop"), 1)
         outer.addLayout(row, 1)
         return page
 
@@ -2808,7 +2812,7 @@ class MainWindow(QMainWindow):
 
     def page_prompt(self) -> QWidget:
         lay = QVBoxLayout()
-        lay.addWidget(self.header("Step 4｜Prompt 編輯", ""))
+        lay.addWidget(self.header("Step 5｜Prompt 編輯", ""))
 
         group_box = QGroupBox("引用組別")
         group_lay = QVBoxLayout(group_box)
@@ -2840,7 +2844,7 @@ class MainWindow(QMainWindow):
         return self.wrap_page(5, lay)
 
     def page_model(self) -> QWidget:
-        lay=QVBoxLayout(); lay.addWidget(self.header("Step 5｜模型與生成參數", "設定模型、品質、尺寸、輸出張數與 run name。"))
+        lay=QVBoxLayout(); lay.addWidget(self.header("Step 6｜模型與生成參數", "設定模型、品質、尺寸、輸出張數與 run name。"))
         box=QGroupBox("OpenAI Image Parameters"); g=QGridLayout(box); g.setColumnStretch(1,1)
         self.model_combo=QComboBox(); self.model_combo.addItems(MODELS); self.model_combo.setCurrentText(self.state.model)
         self.quality_combo=QComboBox(); self.quality_combo.addItems(QUALITIES); self.quality_combo.setCurrentText(self.state.quality if self.state.quality in QUALITIES else "low")
@@ -2881,12 +2885,12 @@ class MainWindow(QMainWindow):
         return self.wrap_page(6, lay)
 
     def page_aggregate(self) -> QWidget:
-        lay=QVBoxLayout(); lay.addWidget(self.header("Step 6｜Aggregate / 設定彙整確認", "確認 Class Name、圖像數量、Target Area、prompt 與模型參數，無誤後才能進入生成。"))
+        lay=QVBoxLayout(); lay.addWidget(self.header("Step 7｜Aggregate / 設定彙整確認", "確認 Class Name、圖像數量、prompt 與模型參數，無誤後才能進入生成。"))
         self.aggregate_box=QPlainTextEdit(); self.aggregate_box.setReadOnly(True); self.aggregate_box.setMinimumHeight(760); self.aggregate_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding); lay.addWidget(self.aggregate_box,10)
         return self.wrap_page(7, lay)
 
     def page_run(self) -> QWidget:
-        lay=QVBoxLayout(); lay.addWidget(self.header("Step 7｜執行生成", "依照目前設定呼叫後端批次生成，並顯示即時 log 與進度。"))
+        lay=QVBoxLayout(); lay.addWidget(self.header("Step 8｜執行生成", "依照目前設定呼叫後端批次生成，並顯示即時 log 與進度。"))
         row=QHBoxLayout(); start=QPushButton("開始生成"); start.setObjectName("PrimaryButton"); start.clicked.connect(self.safe_action("start_generation", self.start_generation)); stop=QPushButton("停止目前程序"); stop.clicked.connect(self.safe_action("stop_process", self.stop_process)); row.addWidget(start); row.addWidget(stop); row.addStretch(1); lay.addLayout(row)
         self.generation_progress_bar=QProgressBar(); self.generation_progress_bar.setRange(0,1); self.generation_progress_bar.setValue(0); self.generation_progress_bar.setFormat("0/0 張")
         self.generation_progress_label=QLabel("尚未開始生成"); self.generation_progress_label.setObjectName("ProgressStatus")
@@ -2898,7 +2902,7 @@ class MainWindow(QMainWindow):
         return self.wrap_page(8, lay)
 
     def page_export(self) -> QWidget:
-        lay=QVBoxLayout(); lay.addWidget(self.header("Step 8｜Export / 輸出資料整理", "檢視生成圖；Submit 會整理至 exports/<Class>/<Run name>，也可額外打包 .zip 到指定路徑。"))
+        lay=QVBoxLayout(); lay.addWidget(self.header("Step 9｜Export / 輸出資料整理", "檢視生成圖；Submit 會整理至 exports/<Class>/<Run name>，也可額外打包 .zip 到指定路徑。"))
         top=QHBoxLayout(); refresh=QPushButton("重新整理輸出"); refresh.clicked.connect(self.safe_action("refresh_outputs", lambda: self.refresh_outputs(auto_select=True))); top.addWidget(refresh); top.addStretch(1); lay.addLayout(top)
 
         mid=QHBoxLayout(); mid.setSpacing(12)
@@ -3008,10 +3012,12 @@ class MainWindow(QMainWindow):
     def max_accessible_step(self) -> int:
         if not self.state.project_id:
             return 0
-        for i, done in enumerate(self.state.completed_steps):
-            if not done:
-                return i
-        return STEP_COUNT - 1
+        for step in VISIBLE_STEPS:
+            if step >= len(self.state.completed_steps):
+                continue
+            if not self.state.completed_steps[step]:
+                return step
+        return VISIBLE_STEPS[-1]
 
     def is_generation_running(self) -> bool:
         return bool(
@@ -3744,12 +3750,6 @@ class MainWindow(QMainWindow):
         if not crops:
             QMessageBox.warning(self, "Missing", "請先完成裁切或使用原始圖片。")
             return False
-        ready = self.all_region_ready_image_paths()
-        if not ready:
-            QMessageBox.warning(self, "Missing", "請至少完成 1 張圖像的 Target Area 框選後，再進入 Step 5。")
-            return False
-        # Step 4 no longer decides the final generation set.  The final 1～16
-        # input groups are selected in Step 5 Prompt 編輯.
         self.refresh_prompt_groups()
         return True
 
@@ -3970,7 +3970,7 @@ class MainWindow(QMainWindow):
             ret = QMessageBox.question(
                 self,
                 "切換 Step 3 模式",
-                f"是否確定要切換到「{target_label}」模式？目前「{current_label}」模式下原圖尺寸/裁切好的所有圖片與後續 Target Area、runs、exports 都會被清除。",
+                f"是否確定要切換到「{target_label}」模式？目前「{current_label}」模式下原圖尺寸/裁切好的所有圖片與後續 runs、exports 都會被清除。",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
             if ret != QMessageBox.StandardButton.Yes:
@@ -4113,7 +4113,7 @@ class MainWindow(QMainWindow):
             return None
 
     def use_selected_original_image(self) -> None:
-        """Add the currently selected raw image to Step 4 inputs without cropping."""
+        """Add the currently selected raw image to Prompt inputs without cropping."""
         src = self.selected_raw_image_path()
         if not src:
             QMessageBox.warning(self, "Missing", "請先點選左側『已上傳圖像縮圖』中的一張圖片。")
@@ -4169,7 +4169,7 @@ class MainWindow(QMainWindow):
         for j in range(4, STEP_COUNT):
             self.state.completed_steps[j] = False
             self.dirty_steps[j] = True
-        # Preserve previous runs/exports when adding original image as Step 4 input.
+        # Preserve previous runs/exports when adding original image as Prompt input.
         self.save_state()
         self.refresh_crops_for_source(src, auto_select=True)
         self.refresh_region_thumbs(); self.refresh_prompt_groups(); self.update_step_buttons()
@@ -4184,7 +4184,7 @@ class MainWindow(QMainWindow):
             ret = QMessageBox.question(
                 self,
                 "直接使用原圖",
-                "此動作會清除目前 Step 3 輸入圖、Target Area 與 mask，並把原圖直接複製到 Step 3 使用。既有 runs 與 exports 會保留。是否繼續？",
+                "此動作會清除目前 Step 3 輸入圖，並把原圖直接複製到 Step 3 使用。既有 runs 與 exports 會保留。是否繼續？",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
             if ret != QMessageBox.StandardButton.Yes:
@@ -4222,11 +4222,11 @@ class MainWindow(QMainWindow):
             self.crop_done_preview.clear("尚無 Step 3 輸入圖像")
         self.refresh_region_thumbs(); self.refresh_prompt_groups(); self.update_step_buttons()
         self.update_step3_mode_ui()
-        self.status_label.setText(f"Status: 使用原圖作為 Step 4 輸入，共 {len(list_images(self.inputs_dir()))} 張。")
+        self.status_label.setText(f"Status: 使用原圖作為 Prompt 輸入，共 {len(list_images(self.inputs_dir()))} 張。")
         return True
 
     def use_all_original_images_and_go_step4(self) -> None:
-        """Footer action: use all Step 2 raw uploads as Step 4 inputs and continue."""
+        """Footer action: use all Step 2 raw uploads as Prompt inputs and continue."""
         ok = self.use_original_images_without_crop(confirm=True, mark_completed=True, auto_select=True)
         if not ok:
             return
@@ -4234,7 +4234,7 @@ class MainWindow(QMainWindow):
         self.dirty_steps[3] = False
         self.save_state()
         self.update_step_buttons()
-        self.goto_step(4)
+        self.goto_step(5)
 
     def crop_select_raw_image(self, path_str: str) -> None:
         src = Path(path_str)
@@ -4444,23 +4444,11 @@ class MainWindow(QMainWindow):
         self.region_status.setText(self.region_status_text(self.region_canvas.image_path))
 
     def all_region_ready_image_paths(self) -> list[Path]:
-        """All Step 3 input images that already have Target Area.
-
-        This is intentionally independent from selected_region_stems. Step 4
-        selection controls which image groups are sent to generation, while
-        Step 5 should still allow the user to inspect/prompt against every
-        completed group.
-        """
-        ready: list[Path] = []
-        for p in list_images(self.inputs_dir()):
-            reg_path = self.regions_dir() / f"{p.stem}.txt"
-            reg = parse_region_txt(reg_path)
-            if parse_target_areas(reg_path):
-                ready.append(p)
-        return ready
+        """All Step 3 input images available for prompt-time selection."""
+        return list_images(self.inputs_dir())
 
     def selected_region_image_paths(self) -> list[Path]:
-        """Final generation groups selected in Step 5 Prompt 編輯."""
+        """Final generation groups selected in Prompt 編輯."""
         all_paths = list_images(self.inputs_dir())
         stems = [str(x) for x in getattr(self.state, "selected_region_stems", []) if str(x)]
         if not stems:
@@ -4600,7 +4588,7 @@ class MainWindow(QMainWindow):
         chosen_set = set(chosen)
         chosen = [s for s in ready_stems if s in chosen_set]
         if len(chosen) > 16:
-            QMessageBox.warning(self, "超過上限", "Step 5 最終輸入組合一次最多只能選定 16 組；請取消部分組合後再繼續。")
+            QMessageBox.warning(self, "超過上限", "Prompt 最終輸入組合一次最多只能選定 16 組；請取消部分組合後再繼續。")
             chosen = chosen[:16]
             self._set_prompt_group_selection(chosen)
         self.state.selected_region_stems = chosen
@@ -4620,10 +4608,9 @@ class MainWindow(QMainWindow):
         c = self.class_name()
         return (
             f"這張圖的 Class Name 為 `{c}`\n"
-            "請根據 Target Area 位置資訊進行食物圖像編輯。\n"
-            "請只在 Target Area 範圍內調整或重新生成目標食物；可讓食物出現自然的翻轉、旋轉、角度變化、擺放位置微調、份量或姿態差異。\n"
-            "不要改動 Target Area 之外的背景、餐具、桌面、光照、相機角度與整體風格。\n"
-            "請不要保留 Target Area 框線、標註框、文字、箭頭或任何提示標記。\n"
+            f"請根據 `{c}` 的位置進行食物圖像編輯。\n"
+            f"可讓 `{c}` 出現自然的翻轉、旋轉、角度變化、擺放位置微調、份量或姿態差異。\n"
+            "不要改動以外的背景、餐具、桌面、光照、相機角度與整體風格。\n"
             "輸出需保持食物可辨識、真實自然，避免變形、融化、重複肢解或不合理食材。"
         )
 
@@ -4687,9 +4674,6 @@ class MainWindow(QMainWindow):
 
     def build_actual_prompt(self) -> str:
         base = self.prompt_edit.toPlainText().strip() if hasattr(self,"prompt_edit") else ""
-        context = self.collect_region_context(self.current_prompt_group())
-        if context:
-            return base + "\n" + context
         return base
 
     def update_actual_prompt_preview(self) -> None:
@@ -4700,10 +4684,10 @@ class MainWindow(QMainWindow):
     def validate_prompt_selection(self) -> bool:
         stems = self.prompt_ready_stems()
         if not stems:
-            QMessageBox.warning(self, "Missing", "請在 Step 5『引用組別』中選定 1～16 組已完成 Target Area 的圖像組合。")
+            QMessageBox.warning(self, "Missing", "請在 Prompt『引用組別』中選定 1～16 組圖像。")
             return False
         if len(stems) > 16:
-            QMessageBox.warning(self, "超過上限", "Step 5 最終輸入組合一次最多只能選定 16 組。")
+            QMessageBox.warning(self, "超過上限", "Prompt 最終輸入組合一次最多只能選定 16 組。")
             return False
         return True
 
@@ -4792,7 +4776,7 @@ class MainWindow(QMainWindow):
         title = "GPT-image-2 輸出尺寸不支援" if blocking else "GPT-image-2 尺寸提醒"
         action = (
             "此尺寸已確認不符合限制，因此系統會阻止繼續下一步。\n"
-            "請回到 Step 6 調整寬度與高度後，再重新按『確認參數並估算本次成本』。"
+            "請回到 Step 4 調整寬度與高度後，再重新按『確認參數並估算本次成本』。"
             if blocking else
             "此模式會先以 API 支援尺寸生成，再將最終圖片回存為原圖尺寸。"
         )
@@ -4944,7 +4928,6 @@ class MainWindow(QMainWindow):
         raw_count=len(list_images(self.raw_dir())); crop_count=len(list_images(self.inputs_dir()))
         selected_paths = self.selected_region_image_paths()
         selected_count = len(selected_paths)
-        annotated=sum(1 for p in selected_paths if (self.regions_dir()/f"{p.stem}.txt").exists())
         prompt=self.build_actual_prompt() if hasattr(self,"prompt_edit") else ""
         lines=[
             "GPT GenImage UI - Aggregate Settings",
@@ -4959,7 +4942,6 @@ class MainWindow(QMainWindow):
             f"原始圖片數量：{raw_count}",
             f"Step 3 輸入圖像數量：{crop_count}",
             f"已選定生成組數：{selected_count}",
-            f"已選定且完成 Target Area 的圖像數量：{annotated}",
             f"裁切尺寸：{self.state.crop_width}*{self.state.crop_height}",
             "",
             "[Prompt]",
@@ -4997,7 +4979,7 @@ class MainWindow(QMainWindow):
         QMessageBox.critical(
             self,
             "Generation runtime not ready",
-            "目前啟動 UI 的 Python 環境缺少 Step 8 所需套件，因此不會開始生成，也不會把 Step 8 標成完成。\n\n"
+            "目前啟動 UI 的 Python 環境缺少執行生成所需套件，因此不會開始生成，也不會把生成步驟標成完成。\n\n"
             f"Python：{sys.executable}\n"
             "缺少或無法匯入：openai\n\n"
             "請在同一個環境執行：\n"
@@ -5032,7 +5014,7 @@ class MainWindow(QMainWindow):
         return None
 
     def current_log_tail(self, limit: int = 10000) -> str:
-        """Return recent Step 8 log text for error analysis without exposing secrets."""
+        """Return recent generation log text for error analysis without exposing secrets."""
         try:
             if hasattr(self, "log_box"):
                 return self.scrub_text(self.log_box.toPlainText()[-max(1000, int(limit)):])
@@ -5071,11 +5053,11 @@ class MainWindow(QMainWindow):
                 "2. 寬與高需要是 16 的倍數。\n"
                 "3. 長寬比不可超過 3:1。\n"
                 "4. 總像素需落在模型支援範圍內。\n\n"
-                "處理方式：請回到 Step 6，改成較小且合法的輸出尺寸後重新執行生成。\n"
+                "處理方式：請回到 Step 4，改成較小且合法的輸出尺寸後重新執行生成。\n"
                 "若你選的是『與原圖尺寸相同』，新版程式會先用 API 支援尺寸生成，再把最終檔案回存為原圖尺寸；若仍看到此錯誤，請確認你已使用最新版本重新啟動 UI。\n\n"
                 "錯誤摘要：\n" + text[-1600:]
             )
-            return title, message, "生成失敗：輸出尺寸不支援，請回到 Step 6 修正。"
+            return title, message, "生成失敗：輸出尺寸不支援，請回到 Step 4 修正。"
         if "no module named 'openai'" in lower or "missing or incompatible dependency: openai" in lower:
             title = "缺少 OpenAI 套件"
             message = (
@@ -5089,14 +5071,14 @@ class MainWindow(QMainWindow):
             title = "API Key / 驗證錯誤"
             message = (
                 "生成失敗原因：OpenAI API Key 未設定、無效，或目前環境沒有正確讀取。\n\n"
-                "處理方式：請回到 Step 0 重新儲存共用 API Key，再回到 Step 8 執行生成。\n\n"
+                "處理方式：請回到 Step 0 重新儲存共用 API Key，再回到 Step 6 執行生成。\n\n"
                 "錯誤摘要：\n" + text[-1600:]
             )
             return title, message, "生成失敗：API Key / 驗證錯誤。"
         title = "生成失敗"
         message = (
             f"生成程序回傳錯誤 code={return_code if return_code is not None else '-'}。\n"
-            "請查看 Step 8 log，依錯誤內容回到對應步驟修正後重新執行。\n\n"
+            "請查看執行生成 log，依錯誤內容回到對應步驟修正後重新執行。\n\n"
             "錯誤摘要：\n" + (text[-2000:] if text else "無可用 log。")
         )
         return title, message, f"生成失敗：return code={return_code if return_code is not None else '-'}，請查看 log。"
@@ -5157,10 +5139,8 @@ class MainWindow(QMainWindow):
             sys.executable,str(self.root/"scripts"/"batch_from_folders.py"),
             "--class-name",self.state.class_name,
             "--images-dir",str(self.inputs_dir()),
-            "--masks-dir",str(self.masks_dir()),
-            "--target-area-dir",str(self.target_masks_dir()),
             "--output-dir",str(self.project_dir()/"runs"),
-            "--workflow","target-area-edit",
+            "--workflow","prompt-only-edit",
             "--model",self.state.model,"--size",self.state.size,"--quality",self.state.quality,
             "--num-outputs","1","--total-outputs",str(self.state.num_outputs),
             "--prompt-file",str(self.prompt_path())
@@ -5207,12 +5187,12 @@ class MainWindow(QMainWindow):
 
     def start_generation(self)->None:
         if not self.save_prompt(show_message=False) or not self.save_model_settings(show_message=False): return
-        if not list_images(self.inputs_dir()): QMessageBox.warning(self,"Missing","請先完成裁切與 Target Area。") ; return
+        if not list_images(self.inputs_dir()): QMessageBox.warning(self,"Missing","請先完成裁切或使用原始圖片。") ; return
         selected_paths = self.selected_region_image_paths()
         if not selected_paths:
-            QMessageBox.warning(self,"Missing","請先在 Step 5『引用組別』選定 1～16 組圖像與 Target Area 組合。") ; return
+            QMessageBox.warning(self,"Missing","請先在 Prompt『引用組別』選定 1～16 組圖像。") ; return
         if len(selected_paths) > 16:
-            QMessageBox.warning(self,"超過上限","Step 5 最終輸入組合一次最多只能選定 16 組。") ; return
+            QMessageBox.warning(self,"超過上限","Prompt 最終輸入組合一次最多只能選定 16 組。") ; return
         if not self.read_env_key(): QMessageBox.warning(self,"Missing","OPENAI_API_KEY 尚未設定，請先到 Step 0 儲存共用 API Key。") ; return
         if not self.check_generation_runtime(): return
         self.state.generation_status = "running"
@@ -5238,7 +5218,7 @@ class MainWindow(QMainWindow):
                 self.dirty_steps[8] = True
                 self.save_state()
                 self.update_step_buttons()
-                self.set_generation_progress(0, "生成程序結束，但沒有找到任何輸出圖；Step 8 不會被標記完成。")
+                self.set_generation_progress(0, "生成程序結束，但沒有找到任何輸出圖；生成步驟不會被標記完成。")
                 QMessageBox.warning(self, "No output", "生成程序結束，但沒有找到任何輸出圖。請查看下方 log。")
         self.run_command(cmd,"generation",on_finished=_after_generation)
 
@@ -5514,7 +5494,7 @@ class MainWindow(QMainWindow):
                 if code == 0 and on_finished:
                     on_finished()
                 if label == "generation" and code == 0 and generation_finished_away:
-                    QMessageBox.information(self, "生成完成", "背景生成程序已完成。請回到 Step 8 查看 log，或進入 Step 9 檢視輸出結果。")
+                    QMessageBox.information(self, "生成完成", "背景生成程序已完成。請回到 Step 6 查看 log，或進入 Step 7 檢視輸出結果。")
             except Exception as exc:
                 self._log_ui_exception(f"process_finished_{label}", exc)
                 try:

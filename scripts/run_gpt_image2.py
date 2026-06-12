@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Run OpenAI GPT Image API for Target Area constrained food/object variation.
+"""Run OpenAI GPT Image API for food/object prompt edits.
 
 This script intentionally contains no local diffusion-model loading.  The main
-food workflow uses one input image, a Target Area mask, and a natural-language
-prompt; legacy industrial ROI workflows are kept for backward compatibility.
+food workflow uses one input image and a natural-language prompt; mask-based
+workflows are kept for backward compatibility.
 
 Workflows:
   prompt-only-edit             image + prompt only, closest to ChatGPT UI upload + prompt
@@ -93,10 +93,9 @@ def default_chinese_prompt(defect_type: str, size: str = "1280x1280") -> str:
     class_name = sanitize_defect_type(defect_type)
     return (
         f"這張圖的 Class Name 為 `{class_name}`\n"
-        "請根據 Target Area 位置資訊進行食物圖像編輯。\n"
-        "請只在 Target Area 範圍內調整或重新生成目標食物；可讓食物出現自然的翻轉、旋轉、角度變化、擺放位置微調、份量或姿態差異。\n"
-        "不要改動 Target Area 之外的背景、餐具、桌面、光照、相機角度與整體風格。\n"
-        "請不要保留 Target Area 框線、標註框、文字、箭頭或任何提示標記。\n"
+        f"請根據 `{class_name}` 的位置進行食物圖像編輯。\n"
+        f"可讓 `{class_name}` 出現自然的翻轉、旋轉、角度變化、擺放位置微調、份量或姿態差異。\n"
+        "不要改動以外的背景、餐具、桌面、光照、相機角度與整體風格。\n"
         "輸出需保持食物可辨識、真實自然，避免變形、融化、重複肢解或不合理食材。"
     )
 
@@ -104,7 +103,7 @@ def load_user_prompt(defect_type: str | None, prompt_file: Path | None, inline_p
     """Load the single user-facing prompt.
 
     This project intentionally uses one simple Chinese prompt by default, matching
-    the ChatGPT UI style: input food image + Target Area mask + natural-language prompt.
+    the ChatGPT UI style: input food image + natural-language prompt.
     Older multi-field prompt.json files are still tolerated for compatibility,
     but new projects should use configs/classes/<class_name>/prompt.txt.
     """
@@ -160,7 +159,7 @@ def build_prompt_bundle(cfg: dict[str, str]) -> dict[str, str]:
 
     base_note = (
         "\n\n補充要求：請把輸入圖像視為待編輯的食物或物件圖。"
-        "Target Area 只作為允許編輯範圍，最終輸出不可保留框線、文字、箭頭或任何標註。"
+        "請維持背景、餐具、桌面、光照、相機角度與整體風格；最終輸出不可保留框線、文字、箭頭或任何標註。"
     )
     prompt_only = user_prompt + base_note
 
@@ -309,7 +308,7 @@ def coerce_gpt2_size_for_api(args: argparse.Namespace) -> None:
 
     If the user explicitly requested an invalid custom size that does not match
     the source image, fail with a machine-readable marker so the UI can explain
-    that Step 6 needs correction.
+    that the UI model-parameter step needs correction.
     """
     if str(args.model).strip().lower() != "gpt-image-2":
         return
@@ -329,7 +328,7 @@ def coerce_gpt2_size_for_api(args: argparse.Namespace) -> None:
     except Exception:
         raise SystemExit(
             "[USER_ERROR][SIZE] " + invalid_reason +
-            "\n請回到 Step 6 修改輸出尺寸；GPT-image-2 需要使用 API 支援的尺寸。"
+            "\n請回到 Step 4 修改輸出尺寸；GPT-image-2 需要使用 API 支援的尺寸。"
         )
 
     if (req_w, req_h) == (src_w, src_h):
@@ -351,7 +350,7 @@ def coerce_gpt2_size_for_api(args: argparse.Namespace) -> None:
 
     raise SystemExit(
         "[USER_ERROR][SIZE] " + invalid_reason +
-        "\n請回到 Step 6 修改輸出尺寸後重新執行生成。GPT-image-2 尺寸限制包含：寬高需為 16 的倍數、長邊不可超過 3840、長寬比不可超過 3:1，且總像素需落在支援範圍。"
+        "\n請回到 Step 4 修改輸出尺寸後重新執行生成。GPT-image-2 尺寸限制包含：寬高需為 16 的倍數、長邊不可超過 3840、長寬比不可超過 3:1，且總像素需落在支援範圍。"
     )
 
 
@@ -1214,7 +1213,7 @@ def _call_openai_image_edit(
 
 def parse_args():
     root = project_root()
-    p = argparse.ArgumentParser(description="OpenAI GPT Image Target Area food/object variation runner")
+    p = argparse.ArgumentParser(description="OpenAI GPT Image food/object prompt edit runner")
     group = p.add_mutually_exclusive_group(required=True)
     group.add_argument("--class-name", help="Class name for folder/config/output naming")
     group.add_argument("--defect-type", help="Backward-compatible alias for --class-name")

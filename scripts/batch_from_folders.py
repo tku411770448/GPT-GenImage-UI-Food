@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Batch-run OpenAI GPT Image 2 from paired image/mask/target_area folders.
+"""Batch-run OpenAI GPT Image from image folders.
 
 Default input structure:
   data/01_inputs/<defect_type>/images/<name>.png
@@ -7,7 +7,7 @@ Default input structure:
   data/01_inputs/<defect_type>/target_area_masks/<name>_target_area.png
 
 Use --workflow prompt-only-edit for the simplest ChatGPT-like mode: image + prompt only.
-Use --workflow target-area-edit for food/object variation constrained by Target Area masks.
+Use --workflow target-area-edit only for legacy/optional Target Area mask edits.
 Legacy: --workflow repair-and-random-generate still supports source mask + target_area guided relocation.
 """
 from __future__ import annotations
@@ -121,7 +121,7 @@ def main() -> None:
     p.add_argument("--images-dir", type=Path, default=None)
     p.add_argument("--masks-dir", type=Path, default=None)
     p.add_argument("--target-area-dir", type=Path, default=None)
-    p.add_argument("--selected-stems-file", type=Path, default=None, help="Optional newline-delimited image stems to include in this batch. Used by UI Step 4 multi-selection.")
+    p.add_argument("--selected-stems-file", type=Path, default=None, help="Optional newline-delimited image stems to include in this batch. Used by UI prompt multi-selection.")
     p.add_argument("--workflow", choices=["prompt-only-edit", "target-area-edit", "repair-and-random-generate", "repair-only", "generate-only"], default="prompt-only-edit")
     p.add_argument("--placement-mode", choices=["fixed-mask", "random-in-target"], default="random-in-target")
     p.add_argument("--seed", type=int, default=5000)
@@ -190,8 +190,8 @@ def main() -> None:
     missing = []
     missing_target = []
     for img in images:
-        mask = find_mask(img, masks_dir) if masks_dir.exists() else None
-        target_area = find_target_area(img, target_area_dir) if target_area_dir.exists() else None
+        mask = find_mask(img, masks_dir) if needs_mask and masks_dir.exists() else None
+        target_area = find_target_area(img, target_area_dir) if needs_target and target_area_dir.exists() else None
         if needs_mask and mask is None:
             missing.append(img.name)
         elif needs_target and target_area is None:

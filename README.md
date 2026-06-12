@@ -5,7 +5,7 @@ calling the OpenAI GPT Image API, and exporting generated results as image datas
 The app is organized as a guided step-by-step UI and keeps project-specific inputs,
 configuration, runs, exports, and logs under `project/<project_name>/`.
 
-The current visible workflow has 9 steps: `Step 0` plus `Step 1` through `Step 8`.
+The current visible workflow has 8 steps: `Step 0` plus `Step 1` through `Step 7`.
 Class Name is configured when a project is created in Step 0, and the OpenAI API key
 is shared by all projects from Step 0.
 
@@ -68,14 +68,13 @@ flowchart TD
     A[Step 0 Homepage / Project Management\nCreate/open/copy/delete project\nSet shared OpenAI API key\nSet Class Name when creating a project]
     B[Step 1 Data Upload\nImport or drag source images]
     C[Step 2 Crop / Use Original\nChoose original images or crop fixed-size inputs]
-    D[Step 3 ROI / Target Area\nDraw ROI and allowed generation areas]
-    E[Step 4 Prompt\nChoose final input groups and edit prompt]
-    F[Step 5 Model Parameters\nModel, quality, size, output count, run name]
-    G[Step 6 Aggregate\nReview settings before generation]
-    H[Step 7 Run Generation\nExecute batch generation and monitor logs]
-    I[Step 8 Export\nExport images plus COCO/YOLO annotations]
+    D[Step 3 Prompt\nChoose final input groups and edit prompt]
+    E[Step 4 Model Parameters\nModel, quality, size, output count, run name]
+    F[Step 5 Aggregate\nReview settings before generation]
+    G[Step 6 Run Generation\nExecute batch generation and monitor logs]
+    H[Step 7 Export\nExport images plus COCO/YOLO annotations]
 
-    A --> B --> C --> D --> E --> F --> G --> H --> I
+    A --> B --> C --> D --> E --> F --> G --> H
 ```
 
 The UI keeps older internal step indexes for compatibility with existing project
@@ -114,46 +113,19 @@ project/<project_name>/data/00_raw_images/<class_name>/
 project/<project_name>/data/01_inputs/<class_name>/images/
 ```
 
-### Step 3: ROI / Target Area
-
-- Draw one or more ROI rectangles for original defect locations.
-- Draw Target Area regions where new defects may be generated.
-- Target Area supports rectangle and polygon drawing.
-- In selection mode, ROI and rectangular Target Area boxes can be resized with corner
-  and edge handles.
-- Step 3 auto-saves region files and masks after edits.
-- ROI masks and Target Area masks are stored under:
-
-```text
-project/<project_name>/data/01_inputs/<class_name>/masks/
-project/<project_name>/data/01_inputs/<class_name>/target_area_masks/
-project/<project_name>/data/01_inputs/<class_name>/regions/
-```
-
-Useful shortcuts in this step include:
-
-- `R`: draw ROI
-- `S`: select ROI
-- `T`: draw rectangular Target Area
-- `L`: draw polygon Target Area
-- `Y`: select Target Area
-- `A` / `D`: delete all / selected ROI
-- `G` / `H`: delete all / selected Target Area
-- `Up` / `Down`: switch image
-
-### Step 4: Prompt
+### Step 3: Prompt
 
 - Choose the final image groups used for generation.
 - Use Ctrl/Shift multi-select; the UI limits a batch to at most 16 groups.
 - Edit a custom prompt or apply a template.
-- The final prompt is combined with selected ROI and Target Area information.
+- The final prompt is sent without ROI, bbox, segmentation, or Target Area coordinates.
 - Prompt configuration is stored under:
 
 ```text
 project/<project_name>/configs/classes/<class_name>/prompt.txt
 ```
 
-### Step 5: Model Parameters
+### Step 4: Model Parameters
 
 Available models:
 
@@ -166,18 +138,18 @@ The UI validates output size rules before generation. For `gpt-image-2`, output
 dimensions must satisfy the current app checks, including 16-pixel multiples, valid
 aspect ratio, and supported total pixel range.
 
-### Step 6: Aggregate
+### Step 5: Aggregate
 
-- Review the selected project, class, image groups, ROI/Target Area coverage, prompt,
-  model, quality, size, output count, and run name.
+- Review the selected project, class, image groups, prompt, model, quality, size,
+  output count, and run name.
 - The aggregate log is written under the current project logs folder.
 
-### Step 7: Run Generation
+### Step 6: Run Generation
 
 - Executes `scripts/run_gpt_image2.py` as a subprocess.
 - Uses the shared Step 0 API key.
-- Uses ROI masks and Target Area masks to repair original defect locations and place
-  new defects within allowed areas.
+- Uses `prompt-only-edit`: one image plus the saved prompt, closest to ChatGPT-style
+  image editing.
 - Shows live logs and generation progress.
 - Generation outputs are written under:
 
@@ -189,7 +161,7 @@ Each run keeps final generated images plus metadata such as prompts, placement r
 bounding boxes, and logs. Temporary masks and previews are cleaned unless intermediate
 files are explicitly kept.
 
-### Step 8: Export
+### Step 7: Export
 
 - Exports the current run or all runs for the class.
 - Writes normalized output folders under:
