@@ -128,10 +128,10 @@ git rev-parse --show-toplevel
 git status
 
 確認目前 repository root 必須是：
-C:/Users/USER/Desktop/GenUI/GenUI3
+[目前檔案所屬絕對路徑]
 
 任務：
-將專案一次生成圖像張數的上限提高到 100000。
+[任務內容]
 
 要求：
 1. 實際修改目前 GenUI3 工作區中的檔案。
