@@ -92,9 +92,9 @@ def format_elapsed(seconds: float) -> str:
 def default_chinese_prompt(defect_type: str, size: str = "1280x1280") -> str:
     class_name = sanitize_defect_type(defect_type)
     return (
-        f"這張圖的 Class Name 為 `{class_name}`\n"
-        f"請根據 `{class_name}` 的位置進行食物圖像編輯。\n"
-        f"可讓 `{class_name}` 出現自然的翻轉、旋轉、角度變化、擺放位置微調、份量或姿態差異。\n"
+        f"這張圖的 Class Name 為 {class_name}\n"
+        f"請根據 {class_name} 的位置進行食物圖像編輯。\n"
+        f"可讓 {class_name} 出現自然的翻轉、旋轉、角度變化、擺放位置微調、份量或姿態差異。\n"
         "不要改動以外的背景、餐具、桌面、光照、相機角度與整體風格。\n"
         "輸出需保持食物可辨識、真實自然，避免變形、融化、重複肢解或不合理食材。"
     )
