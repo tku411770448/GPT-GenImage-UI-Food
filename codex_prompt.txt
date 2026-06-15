@@ -115,3 +115,39 @@ git push
 - 目前分支名稱
 - push 是否成功
 - push 到哪個 remote / branch
+
+=======================================================================================
+
+### 一開始先於 codex 初始化
+prompt：
+
+請重新針對目前 VS Code 開啟的 GenUI3 專案進行修改，不要沿用上一輪任務結果。
+
+請先執行：
+git rev-parse --show-toplevel
+git status
+
+確認目前 repository root 必須是：
+C:/Users/USER/Desktop/GenUI/GenUI3
+
+任務：
+將專案一次生成圖像張數的上限提高到 100000。
+
+要求：
+1. 實際修改目前 GenUI3 工作區中的檔案。
+2. 修改後請執行：
+   git diff --stat
+   git diff
+3. 請明確回報實際修改了哪幾個檔案。
+4. 如果 Python 檔案有修改，執行：
+   python -m compileall .
+5. 不要使用 git push、git pull、git remote。
+6. 檢查無誤後建立本地 commit：
+   git add -A
+   git commit -m "Raise generation output limit to 100000"
+7. 最後回報：
+   - repository root
+   - 修改檔案
+   - 檢查結果
+   - commit message
+   - commit hash
