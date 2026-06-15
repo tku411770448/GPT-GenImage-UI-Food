@@ -59,11 +59,20 @@ git push
 
 請依照 AGENTS.md 的規則修改目前專案。
 
+請重新針對目前 VS Code 開啟的 [資料夾] 專案進行修改，不要沿用上一輪任務結果。
+
+請先執行：
+git rev-parse --show-toplevel
+git status
+
+確認目前 repository root 必須是：
+[目前檔案所屬絕對路徑]
+
 任務：
-[在這裡描述你要修正或新增的功能]
+[任務內容]
 
 完成條件：
-1. 實際修改檔案。
+1. 實際修改目前專案中的檔案。
 2. 執行必要的檢查或測試。
 3. 不要上傳 GitHub，不要使用 push/pull/remote。
 4. 完成後建立本地 Git commit。
@@ -79,8 +88,17 @@ git push
 
 請依照 AGENTS.md 的規則修改目前專案。
 
+請重新針對目前 VS Code 開啟的 [資料夾] 專案進行修改，不要沿用上一輪任務結果。
+
+請先執行：
+git rev-parse --show-toplevel
+git status
+
+確認目前 repository root 必須是：
+[目前檔案所屬絕對路徑]
+
 任務：
-仔細分析、檢視目前專案內容，並將目前專案的內容對 README.md 做同步的修正
+[任務內容]
 
 完成條件：
 1. 實際修改目前專案中的檔案。
@@ -116,38 +134,3 @@ git push
 - push 是否成功
 - push 到哪個 remote / branch
 
-=======================================================================================
-
-### 一開始先於 codex 初始化
-prompt：
-
-請重新針對目前 VS Code 開啟的 GenUI3 專案進行修改，不要沿用上一輪任務結果。
-
-請先執行：
-git rev-parse --show-toplevel
-git status
-
-確認目前 repository root 必須是：
-[目前檔案所屬絕對路徑]
-
-任務：
-[任務內容]
-
-要求：
-1. 實際修改目前 GenUI3 工作區中的檔案。
-2. 修改後請執行：
-   git diff --stat
-   git diff
-3. 請明確回報實際修改了哪幾個檔案。
-4. 如果 Python 檔案有修改，執行：
-   python -m compileall .
-5. 不要使用 git push、git pull、git remote。
-6. 檢查無誤後建立本地 commit：
-   git add -A
-   git commit -m "Raise generation output limit to 100000"
-7. 最後回報：
-   - repository root
-   - 修改檔案
-   - 檢查結果
-   - commit message
-   - commit hash
